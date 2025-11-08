@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PaperBase | Community-Driven Study Material Platform</title>
+    <!-- Load Tailwind CSS via CDN --><script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font --><link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #3B82F6; /* Blue-500 */
+            --background-color: #0F172A; /* Slate-900 */
+            --grid-line-color: rgba(60, 80, 150, 0.6); /* Slightly darker, more opaque blue for lines */
+            --cell-size: 60px; /* Increased cell size for visibility */
+            --base-blue: #1A2038; /* A deeper base blue for the background */
+            --glow-blue: rgba(90, 120, 200, 0.3); /* Softer glow for cells */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--base-blue); /* Deep base blue */
+            color: #E2E8F0; /* Slate-200 */
+            background-attachment: fixed; /* Grid stays put when scrolling */
+            position: relative;
+            overflow-x: hidden; /* Prevent horizontal scroll from grid */
+            background-image:
+                radial-gradient(circle 800px at 50% 10%, rgba(50, 80, 150, 0.4) 0%, transparent 80%); /* Stronger radial gradient */
+            background-size: 100% 100%; /* Ensure gradient covers full body */
+            background-position: center;
+        }
+
+        /* Grid overlay using ::before pseudo-element */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allows interaction with content below */
+            z-index: -1; /* Ensures it stays behind content */
+            background-image:
+                linear-gradient(to right, var(--grid-line-color) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-line-color) 1px, transparent 1px);
+            background-size: var(--cell-size) var(--cell-size);
+            background-attachment: fixed;
+            opacity: 0.8; /* Make grid lines more opaque */
+        }
+
+        .text-gradient {
+            background-image: linear-gradient(to right, #60A5FA, #ffffff); /* Blue to White Gradient */
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            color: transparent;
+        }
+
+        /* Styles for glowing grid cells */
+        .glowing-cell-overlay {
+            position: fixed; /* Fixed position to cover the viewport */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, var(--cell-size));
+            grid-template-rows: repeat(auto-fill, var(--cell-size));
+            pointer-events: none;
+            z-index: -2; /* Below the main grid lines */
+        }
+        .glowing-cell {
+            background-color: transparent;
+            transition: background-color 2s ease-out; /* Smooth fade out */
+        }
+        .glowing-cell.glow {
+            background-color: var(--glow-blue); /* Glowing color */
+            transition: background-color 0s; /* Instant glow */
+        }
+
+        /* Glassmorphism and 3D effect for header */
+        .glass-header {
+            background-color: rgba(15, 23, 42, 0.4); /* Reduced opacity for transparency */
+            backdrop-filter: blur(10px); /* Frosted glass effect */
+            -webkit-backdrop-filter: blur(10px); /* Safari support */
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); /* Stronger, transparent shadow */
+            transform: perspective(1000px); /* Establish 3D context */
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        .glass-header:hover {
+            transform: perspective(1000px) translateY(-2px) rotateX(1deg); /* Slight lift and tilt on hover */
+            box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4);
+        }
+
+        /* Custom scrollbar styling for dark mode */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #3B82F6; /* Blue-500 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background-color: #0F172A; /* Slate-900 */
+        }
+
+        /* NEW/UPDATED: Styles for the decorative cards */
+        .decorative-card {
+            background-color: rgba(22, 28, 44, 0.7); /* Darker, more opaque glass base */
+            backdrop-filter: blur(15px); /* Stronger blur for glass effect */
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(70, 90, 150, 0.4); /* Subtle, lighter border */
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2); /* Soft shadow */
+            border-radius: 12px; /* Rounded corners */
+            position: absolute;
+            width: 280px; /* Slightly larger cards */
+            height: 360px; /* Slightly taller cards */
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .decorative-card .card-header {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #A7B4DE; /* Light blue-grey for headers */
+            margin-bottom: 1rem;
+        }
+        .decorative-card .card-content-line {
+            height: 10px;
+            background-color: rgba(90, 110, 180, 0.3); /* Subtle blue lines */
+            border-radius: 9999px;
+            margin-bottom: 0.75rem;
+        }
+    </style>
+</head>
+<body class="antialiased relative">
+
+    <!-- Header & Navigation (Glassmorphism) --><header class="sticky top-0 z-50 glass-header">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center py-4">
+            <!-- Logo --><a href="#" class="flex items-center space-x-2">
+                <img src="https://i.postimg.cc/vmhTnRNt/peakprep-logo-128.png" 
+                     alt="PaperBase Logo" 
+                     class="h-10 w-auto"
+                     onerror="this.onerror=null; this.src='https://placehold.co/128x40/0F172A/FFF?text=PaperBase'; this.classList.remove('h-10'); this.classList.add('h-10', 'w-32');"> <!-- Use image logo -->
+                <span class="text-2xl font-extrabold text-white tracking-tight">Paperbase</span>
+            </a>
+            <div class="hidden md:flex space-x-8 text-sm font-medium text-slate-200">
+                <a href="#features" class="hover:text-blue-400 transition duration-300">Features</a>
+                <a href="#howitworks" class="hover:text-blue-400 transition duration-300">How It Works</a>
+                <a href="#pricing" class="hover:text-blue-400 transition duration-300">Pricing</a>
+            </div>
+            <!-- Auth Buttons -->
+            <div class="flex items-center space-x-4">
+                <a href="#" class="text-sm font-medium text-slate-200 hover:text-blue-400 transition duration-300">
+                    Login
+                </a>
+                <!-- Sign Up Button -->
+                <a href="#" class="px-5 py-2 text-sm font-semibold rounded-full bg-blue-600 text-white hover:bg-blue-700 transition duration-300 shadow-md shadow-blue-500/50">
+                    Sign Up
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Glowing Cell Overlay Container --><div class="glowing-cell-overlay"></div>
+
+    <!-- Main content area --><main class="relative z-10">
+
+        <!-- Hero Section --><section class="relative z-10 py-20 overflow-hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative">
+
+                <!-- Decorative Card Background (UPDATED) --><div class="absolute inset-0 max-w-lg mx-auto lg:max-w-none lg:mx-0 lg:left-1/2 lg:-right-20 hidden lg:block" aria-hidden="true">
+                    <div class="w-full h-full flex items-center justify-center relative -mt-16">
+                        <!-- Card 1 (Back) --><div class="decorative-card transform -rotate-15 translate-x-28 translate-y-24 blur-[1px] opacity-70">
+                            <h3 class="card-header text-blue-300">NEET Biology Quick Facts</h3>
+                            <div class="flex-grow flex flex-col justify-end">
+                                <div class="card-content-line w-full"></div>
+                                <div class="card-content-line w-10/12"></div>
+                                <div class="card-content-line w-full"></div>
+                                <div class="card-content-line w-8/12"></div>
+                            </div>
+                        </div>
+                        <!-- Card 2 (Middle) --><div class="decorative-card transform -rotate-5 translate-x-8 translate-y-12 opacity-90">
+                            <h3 class="card-header text-green-300">JEE Mains - Math DPP #12</h3>
+                            <div class="flex-grow flex flex-col justify-end">
+                                <div class="card-content-line w-full"></div>
+                                <div class="card-content-line w-11/12"></div>
+                                <div class="card-content-line w-9/12"></div>
+                                <div class="card-content-line w-full"></div>
+                            </div>
+                        </div>
+                        <!-- Card 3 (Front) --><div class="decorative-card transform rotate-8 -translate-x-20 -translate-y-2">
+                            <h3 class="card-header text-white">Physics Module 3 Notes</h3>
+                            <div class="flex-grow flex flex-col justify-end">
+                                <div class="card-content-line w-full"></div>
+                                <div class="card-content-line w-8/12"></div>
+                                <div class="card-content-line w-full"></div>
+                                <div class="card-content-line w-7/12"></div>
+                                <div class="card-content-line w-full"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- End Decorative Card Background --><!-- Hero Content --><div class="relative z-10">
+                    <span class="inline-block text-sm font-semibold text-blue-300 bg-blue-900/50 px-3 py-1 rounded-full uppercase tracking-wide mb-4">
+                        🚀 India’s First Community Learning Platform
+                    </span>
+                    <h1 class="text-5xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white mb-6">
+                        Turn Your DPPs into <span class="text-gradient">Power</span> and <span class="text-green-400">Profit</span>.
+                    </h1>
+                    <p class="max-w-3xl mx-auto text-xl text-slate-400 mb-10">
+                        PaperBase is the first platform where JEE, NEET, and Board aspirants can upload, discover, and earn from Daily Practice Papers (DPPs) and question sets.
+                    </p>
+                    
+                    <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                        <a href="#pricing" class="inline-block px-10 py-4 text-lg font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition duration-300 transform hover:scale-105 shadow-xl shadow-green-500/30">
+                            Start Earning & Learning Today
+                        </a>
+                        <a href="#howitworks" class="inline-block px-10 py-4 text-lg font-bold text-slate-100 bg-slate-700/50 border-2 border-slate-600 rounded-xl hover:bg-slate-700 transition duration-300 transform hover:scale-105 shadow-md">
+                            See How It Works
+                        </a>
+                    </div>
+                </div>
+                <!-- End Hero Content --></div>
+        </section>
+        
+        <!-- How It Works Section --><section id="howitworks" class="py-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-4xl font-extrabold text-white text-center mb-16">
+                    🧩 Simple Steps to Community Success
+                </h2>
+                
+                <div class="grid md:grid-cols-4 gap-8">
+                    <!-- Step 1 --><div class="bg-slate-800/50 p-6 rounded-xl border border-blue-700/30 text-center transform hover:scale-105 transition duration-300 hover:shadow-2xl hover:shadow-blue-900/50">
+                        <div class="mb-4 text-blue-400 mx-auto w-12 h-12 flex items-center justify-center rounded-full bg-blue-900/50">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M12 12v9"/><path d="m16 16-4 4-4-4"/></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">1. Upload Your Materials</h3>
+                        <p class="text-slate-300">Securely upload your DPPs, school worksheets, or coaching papers (PDFs/Images).</p>
+                    </div>
+
+                    <!-- Step 2 --><div class="bg-slate-800/50 p-6 rounded-xl border border-blue-700/30 text-center transform hover:scale-105 transition duration-300 hover:shadow-2xl hover:shadow-blue-900/50">
+                        <div class="mb-4 text-green-400 mx-auto w-12 h-12 flex items-center justify-center rounded-full bg-green-900/50">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">2. AI Verification & OCR</h3>
+                        <p class="text-slate-300">Our AI checks duplicates & extracts text (OCR) using Google Cloud Vision for powerful searching.</p>
+                    </div>
+                    
+                    <!-- Step 3 --><div class="bg-slate-800/50 p-6 rounded-xl border border-blue-700/30 text-center transform hover:scale-105 transition duration-300 hover:shadow-2xl hover:shadow-blue-900/50">
+                        <div class="mb-4 text-yellow-400 mx-auto w-12 h-12 flex items-center justify-center rounded-full bg-yellow-900/50">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="7"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.11"/></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">3. Earn Credits & Rewards</h3>
+                        <p class="text-slate-300">Once verified, your valuable upload instantly earns you credits, or even cash rewards.</p>
+                    </div>
+
+                    <!-- Step 4 --><div class="bg-slate-800/50 p-6 rounded-xl border border-blue-700/30 text-center transform hover:scale-105 transition duration-300 hover:shadow-2xl hover:shadow-blue-900/50">
+                        <div class="mb-4 text-red-400 mx-auto w-12 h-12 flex items-center justify-center rounded-full bg-red-900/50">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">4. Access & Download</h3>
+                        <p class="text-slate-300">Use your credits to download other DPPs or unlock unlimited access with a Premium plan.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    
+        <!-- NEW SECTION: Focuses on geographical/institutional diversity of papers --><section id="papers" class="py-20 md:py-28 bg-slate-800/70 border-y border-blue-700/50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h2 class="text-4xl font-extrabold text-white text-center mb-4">
+            🌍 The Largest Archive of Indian Practice Papers
+        </h2>
+        <p class="text-xl text-slate-400 text-center mb-16 max-w-4xl mx-auto">
+            Break free from local study limits. Gain access to a massive library of high-quality Daily Practice Papers (DPPs), Test Series, and Notes from **all major coaching hubs and states**.
+        </p>
+
+        <div class="flex flex-wrap justify-center gap-4 mb-16 max-w-5xl mx-auto">
+            <span class="origin-chip text-sm font-semibold px-4 py-2 rounded-full transform hover:scale-105 transition duration-300">Test Series</span>
+            <span class="origin-chip text-sm font-semibold px-4 py-2 rounded-full transform hover:scale-105 transition duration-300">Advanced DPPs</span>
+            <span class="origin-chip text-sm font-semibold px-4 py-2 rounded-full transform hover:scale-105 transition duration-300">NEET Modules</span>
+            <span class="origin-chip text-sm font-semibold px-4 py-2 rounded-full transform hover:scale-105 transition duration-300">Board Solved Papers</span>
+            <span class="origin-chip text-sm font-semibold px-4 py-2 rounded-full transform hover:scale-105 transition duration-300">Concept Sheets</span>
+            <span class="origin-chip text-sm font-semibold px-4 py-2 rounded-full transform hover:scale-105 transition duration-300">Mock Exams</span>
+            <span class="origin-chip text-sm font-semibold px-4 py-2 rounded-full transform hover:scale-105 transition duration-300">Competitive Sets</span>
+            <span class="origin-chip text-sm font-semibold px-4 py-2 rounded-full transform hover:scale-105 transition duration-300">Coaching Archives</span>
+            <span class="origin-chip text-sm font-semibold px-4 py-2 rounded-full transform hover:scale-105 transition duration-300">Topic Tests</span>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-10">
+            
+            <div class="flex flex-col items-start p-6 rounded-xl bg-slate-800/50 border border-red-700/30 transform hover:scale-[1.02] transition duration-300">
+                <div class="text-red-400 mb-4 bg-red-900/50 p-3 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-4 6-4 5 2 6 2 4-2 6-2V2s-3 2-6 2-5-2-6-2z"/><path d="M2 20s3-4 6-4 5 2 6 2 4-2 6-2V10"/></svg>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-2">National Level Practice</h3>
+                <p class="text-slate-300 text-left">Access the highest-quality papers from top-tier institutes across india!</p>
+            </div>
+
+            <div class="flex flex-col items-start p-6 rounded-xl bg-slate-800/50 border border-green-700/30 transform hover:scale-[1.02] transition duration-300">
+                <div class="text-green-400 mb-4 bg-green-900/50 p-3 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12H3"/><path d="M12 3v18"/><path d="M21 9H3"/><path d="M21 15H3"/></svg>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-2">Board Specific Content</h3>
+                <p class="text-slate-300 text-left">Find specialized notes, previous year question papers, and sample papers tailored specifically for boards like CBSE, ICSE, UP, and Maharashtra.</p>
+            </div>
+            
+            <div class="flex flex-col items-start p-6 rounded-xl bg-slate-800/50 border border-blue-700/30 transform hover:scale-[1.02] transition duration-300">
+                <div class="text-blue-400 mb-4 bg-blue-900/50 p-3 rounded-xl">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-2">Inter-City Difficulty Levels</h3>
+                <p class="text-slate-300 text-left">Practice papers ranging from basic concept clarity to the highest difficulty levels used in different city-level entrance exams.</p>
+            </div>
+            
+        </div>
+    </div>
+</section>
+
+
+        <!-- Pricing/Monetization Section --><section id="pricing" class="py-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <h2 class="text-4xl font-extrabold text-white text-center mb-4">
+                    Choose Your Path to Unlimited Practice
+                </h2>
+                <p class="text-xl text-gray-300 text-center mb-16">
+                    Unlock the full potential of community-sourced content.
+                </p>
+
+                <!-- Pricing grid updated to 2 columns and centered --><div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+
+                    <!-- Plan 1: Free Tier --><div class="bg-slate-800/70 border border-blue-700/50 text-white p-8 rounded-xl flex flex-col justify-between">
+                        <header>
+                            <h3 class="text-2xl font-bold mb-2">Free Tier</h3>
+                            <p class="text-slate-400 mb-6">Contribute to gain access.</p>
+                            <div class="text-4xl font-extrabold mb-6">
+                                ₹0<span class="text-base font-medium text-slate-400">/mo</span>
+                            </div>
+                        </header>
+                        <ul class="space-y-3 text-slate-300 mb-8">
+                            <li class="flex items-center"><svg class="w-5 h-5 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg> Upload & Earn Credits</li>
+                            <li class="flex items-center"><svg class="w-5 h-5 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg> Limited Daily Downloads</li>
+                            <li class="flex items-center"><svg class="w-5 h-5 text-green-400 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg> Access via Ads or Contribution</li>
+                        </ul>
+                        <a href="#" class="block text-center w-full py-3 font-semibold bg-slate-700 text-slate-100 rounded-lg hover:bg-slate-600 transition duration-300">Start Free</a>
+                    </div>
+
+                    <!-- Plan 2: Pro Plan (Recommended) --><div class="bg-blue-600 text-white p-8 rounded-xl flex flex-col justify-between shadow-2xl shadow-blue-500/30 border-4 border-green-500 transform lg:scale-105">
+                        <header>
+                            <span class="inline-block bg-green-500 text-white text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide mb-3">
+                                Best Value
+                            </span>
+                            <h3 class="text-3xl font-bold mb-2">Pro Plan</h3>
+                            <p class="text-blue-200 mb-6">Serious students needing maximum content.</p>
+                            <div class="text-5xl font-extrabold mb-6">
+                                ₹99<span class="text-base font-medium text-blue-200">/mo</span>
+                            </div>
+                        </header>
+                        <ul class="space-y-3 text-blue-100 mb-8">
+                            <li class="flex items-center"><svg class="w-5 h-5 text-green-300 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg> **Unlimited Downloads**</li>
+                            <li class="flex items-center"><svg class="w-5 h-5 text-green-300 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg> Ad-Free Browsing</li>
+                            <li class="flex items-center"><svg class="w-5 h-5 text-green-300 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg> Faster Upload Approvals</li>
+                        </ul>
+                        <a href="#" class="block text-center w-full py-3 font-semibold bg-green-500 text-white rounded-lg hover:bg-green-600 transition duration-300 shadow-lg">Go Pro Now</a>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- Mission & Vision Section --><section class="py-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid md:grid-cols-2 gap-12 items-center">
+                    
+                    <!-- Mission Block --><div>
+                        <h3 class="text-lg font-semibold text-red-400 uppercase tracking-wider mb-2">🌱 Mission</h3>
+                        <h2 class="text-3xl font-extrabold text-white mb-4">
+                            "Make every student’s hard work useful for thousands of others."
+                        </h2>
+                        <p class="text-slate-300 text-lg">
+                            We aim to crowdsource academic content—to turn scattered study resources into a structured, searchable, and shared ecosystem that democratizes access to quality practice material.
+                        </p>
+                    </div>
+
+                    <!-- Vision Block --><div>
+                        <h3 class="text-lg font-semibold text-blue-400 uppercase tracking-wider mb-2">🧭 Vision</h3>
+                        <h2 class="text-3xl font-extrabold text-white mb-4">
+                            To be the largest community learning archive in India.
+                        </h2>
+                        <p class="text-slate-300 text-lg">
+                            A place where every DPP, worksheet, or mock paper ever made by students or teachers can be found, reused, and improved collaboratively for exam success.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Final CTA --><section class="py-16">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <h2 class="text-4xl font-extrabold text-white mb-4">
+                    Ready to Transform Your Practice Papers into Power?
+                </h2>
+                <p class="text-xl text-slate-400 mb-8">
+                    Join thousands of JEE, NEET, and Board aspirants today.
+                </p>
+                <a href="#" class="inline-block px-12 py-4 text-xl font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition duration-300 transform hover:scale-105 shadow-2xl shadow-green-500/30">
+                    Sign Up Now — It's Free!
+                </a>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer --><footer class="bg-slate-900 border-t border-slate-700/50 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="md:flex md:justify-between md:items-center">
+                <div class="mb-6 md:mb-0">
+                    <a href="#" class="text-3xl font-extrabold text-white tracking-tight">
+                        Paper<span class="text-green-500">Base</span>
+                    </a>
+                    <p class="text-gray-400 mt-2 text-sm">© 2025 PaperBase. All rights reserved.</p>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-8 sm:gap-6 sm:grid-cols-3">
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Resources</h3>
+                        <ul class="mt-4 space-y-2">
+                            <li><a href="#" class="text-base text-gray-300 hover:text-blue-400">Documentation</a></li>
+                            <li><a href="#" class="text-base text-gray-300 hover:text-blue-400">Creator Guide</a></li>
+                            <li><a href="#" class="text-base text-gray-300 hover:text-blue-400">Help Center</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Company</h3>
+                        <ul class="mt-4 space-y-2">
+                            <li><a href="#" class="text-base text-gray-300 hover:text-blue-400">About Us</a></li>
+                            <li><a href="#" class="text-base text-gray-300 hover:text-blue-400">Careers</a></li>
+                            <li><a href="#" class="text-base text-gray-300 hover:text-blue-400">Contact</a></li>
+                        </ul>
+                    </div>
+                    <div class="hidden sm:block">
+                        <h3 class="text-sm font-semibold text-gray-400 uppercase tracking-wider">Legal</h3>
+                        <ul class="mt-4 space-y-2">
+                            <li><a href="#" class="text-base text-gray-300 hover:text-blue-400">Privacy Policy</a></li>
+                            <li><a href="#" class="text-base text-gray-300 hover:text-blue-400">Terms & Conditions</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript for dynamic glowing cells --><script>
+        const overlay = document.querySelector('.glowing-cell-overlay');
+        const cellSize = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell-size'));
+        const glowBlue = getComputedStyle(document.documentElement).getPropertyValue('--glow-blue');
+
+        function createCells() {
+            // Clear existing cells
+            overlay.innerHTML = '';
+            // Calculate number of columns based on window width
+            const numCols = Math.ceil(window.innerWidth / cellSize);
+            // Calculate number of rows based on the *scrollable height* of the document
+            const numRows = Math.ceil(document.documentElement.scrollHeight / cellSize);
+
+            // Set grid template columns/rows based on calculations
+            overlay.style.gridTemplateColumns = `repeat(${numCols}, ${cellSize}px)`;
+            // Explicitly setting height for overlay to match document scrollHeight
+            overlay.style.height = `${numRows * cellSize}px`;
+            overlay.style.width = `100%`; // Ensure it spans full width
+
+
+            for (let i = 0; i < numCols * numRows; i++) {
+                const cell = document.createElement('div');
+                cell.classList.add('glowing-cell');
+                cell.dataset.index = i; // Store index for easier identification
+                overlay.appendChild(cell);
+            }
+        }
+
+        let glowingInterval;
+
+        function startGlowingCells() {
+            const cells = Array.from(overlay.children);
+            if (cells.length === 0) return;
+
+            // Clear previous interval if any
+            if (glowingInterval) clearInterval(glowingInterval);
+
+            glowingInterval = setInterval(() => {
+                // Remove glow from previously glowing cells
+                cells.forEach(cell => {
+                    if (cell.classList.contains('glow')) {
+                        cell.classList.remove('glow');
+                    }
+                });
+
+                // Select a random number of cells to glow (e.g., 3-7 cells)
+                const numToGlow = Math.floor(Math.random() * 5) + 3;
+                for (let i = 0; i < numToGlow; i++) {
+                    const randomIndex = Math.floor(Math.random() * cells.length);
+                    const cellToGlow = cells[randomIndex];
+                    if (cellToGlow) {
+                        cellToGlow.classList.add('glow');
+                    }
+                }
+            }, 1000); // Change cells every 1000ms (1 second)
+        }
+
+        // Initial setup
+        createCells();
+        startGlowingCells();
+
+        // Recreate cells and restart glowing on window resize
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                createCells();
+                startGlowingCells(); // Restart with new cell layout
+            }, 250); // Debounce resize for performance
+        });
+    </script>
+
+</body>
+</html>
